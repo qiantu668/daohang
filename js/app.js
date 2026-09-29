@@ -1626,22 +1626,6 @@
     if (!global.DeepSeekPlanner) throw new Error('DeepSeek 模块未加载，请刷新页面后重试');
     var startMin = Planning.minutes(ctx.settings.defaultStartTime);
     if (startMin == null) startMin = 480;
-    var matrix = Planning.buildMatrix(ctx.start, ctx.planTasks, ctx.end);
-    var baseline = Planning.solveSmartRoutes({
-      tasks: ctx.planTasks,
-      vehicles: ctx.vehicles,
-      matrix: matrix,
-      defaultStartTime: ctx.settings.defaultStartTime,
-      stopMinutes: ctx.settings.stopMinutes,
-      balanceLevel: ctx.settings.balanceLevel
-    }).filter(function (r) { return r.stops && r.stops.length; });
-    var baselineDrive = baseline.reduce(function (sum, r) {
-      return sum + Math.max(0, r.totalDurationMin - r.stops.length * ctx.settings.stopMinutes);
-    }, 0);
-    var baselineFinishes = baseline.map(function (r) { return r.finishMin; });
-    var baselineSpread = baselineFinishes.length
-      ? Math.max.apply(null, baselineFinishes) - Math.min.apply(null, baselineFinishes)
-      : 0;
 
     return DeepSeekPlanner.plan({
       apiKey: ctx.settings.deepseekKey,
@@ -1656,34 +1640,6 @@
     }).then(function (plan) {
       var routes = plan.routes || [];
       reorderAIRoutes(routes, ctx);
-      var taskMap = planTaskMap(ctx.planTasks);
-      var aiDrive = 0;
-      var aiFinishes = [];
-      var aiConflicts = 0;
-      routes.forEach(function (r) {
-        var prev = 0;
-        var cur = startMin;
-        (r.stops || []).forEach(function (s) {
-          var t = taskMap[s.taskId];
-          var ti = ctx.planTasks.indexOf(t) + 1;
-          cur += matrix.time[prev][ti];
-          if (t.deadlineMin != null && cur > t.deadlineMin) aiConflicts++;
-          cur += ctx.settings.stopMinutes;
-          prev = ti;
-        });
-        cur += matrix.time[prev][matrix.n + 1];
-        aiDrive += cur - startMin;
-        aiFinishes.push(cur);
-      });
-      var aiSpread = aiFinishes.length
-        ? Math.max.apply(null, aiFinishes) - Math.min.apply(null, aiFinishes)
-        : 0;
-      if (aiConflicts > 0 || aiSpread > 120 || aiDrive > baselineDrive * 1.35) {
-        var err = new Error(aiConflicts > 0 ? '存在超时冲突'
-          : (aiSpread > 120 ? '返回时间差超过 2 小时' : '路线明显绕路'));
-        err.useFallback = true;
-        throw err;
-      }
       routes = attachDisplayLegs(routes, ctx);
       return routes.reduce(function (p, r) {
         return p.then(function () {
@@ -1728,8 +1684,7 @@
     prepareDispatchContext(state, settings, state.tasks.slice()).then(function (ctx) {
       if (mode === 'ai') {
         return runAIDispatch(ctx).catch(function (err) {
-          var reason = err && err.message ? err.message : '未知错误';
-          toast((err && err.useFallback ? 'AI 方案不合理，已改用离线均衡方案：' : 'AI 派车失败，已改用离线算法：') + reason, 'warn');
+          toast('AI 派车失败，已改用离线算法：' + (err && err.message ? err.message : '未知错误'), 'warn');
           return runOfflineDispatch(ctx);
         });
       }
