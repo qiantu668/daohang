@@ -1611,10 +1611,21 @@
       vehicles: ctx.vehicles,
       tasks: ctx.planTasks
     }).then(function (plan) {
-      var result = { routes: attachDisplayLegs(plan.routes || [], ctx) };
-      result.generatedAt = new Date().toISOString();
-      Store.setResult(result);
-      toast('AI 派车完成', 'success');
+      var routes = attachDisplayLegs(plan.routes || [], ctx);
+      return routes.reduce(function (p, r) {
+        return p.then(function () {
+          return Geo.routeLegs(routePoints(ctx, r)).then(function (legs) { r.legs = legs; });
+        });
+      }, Promise.resolve()).then(function () {
+        var result = Planning.applyRealLegs({ routes: routes }, {
+          tasks: ctx.planTasks,
+          defaultStartTime: ctx.settings.defaultStartTime,
+          stopMinutes: ctx.settings.stopMinutes
+        });
+        result.generatedAt = new Date().toISOString();
+        Store.setResult(result);
+        toast('AI 派车完成', 'success');
+      });
     });
   }
 
