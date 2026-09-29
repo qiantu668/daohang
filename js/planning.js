@@ -696,6 +696,66 @@
     return result;
   }
 
+  function optimizeRouteOrder(opts) {
+    var tasks = opts.tasks || [];
+    if (!tasks.length) return [];
+    var start = opts.start;
+    var end = opts.end || start;
+    var matrix = buildMatrix(start, tasks, end);
+    var route = tasks.map(function (_, i) { return i; });
+    var defaultStart = minutes(opts.defaultStartTime);
+    if (defaultStart == null) defaultStart = 480;
+    var stopMinutes = Math.max(0, Number(opts.stopMinutes) || 0);
+
+    function seq(r) {
+      return [0].concat(r.map(function (x) { return x + 1; })).concat([matrix.n + 1]);
+    }
+
+    function travel(r) {
+      var s = seq(r);
+      var c = 0;
+      for (var j = 0; j < s.length - 1; j++) c += matrix.time[s[j]][s[j + 1]];
+      return c;
+    }
+
+    function penalty(r) {
+      var cur = defaultStart;
+      var prev = 0;
+      var p = 0;
+      r.forEach(function (i) {
+        cur += matrix.time[prev][i + 1];
+        var dl = taskDeadlineMin(tasks[i]);
+        if (dl != null && cur > dl) p += 40 + (cur - dl);
+        cur += stopMinutes;
+        prev = i + 1;
+      });
+      return p;
+    }
+
+    function cost(r) {
+      return travel(r) + penalty(r);
+    }
+
+    var improved = true;
+    var guard = 0;
+    while (improved && guard < 300) {
+      improved = false;
+      guard++;
+      for (var a = 0; a < route.length - 1 && !improved; a++) {
+        for (var b = a + 1; b < route.length && !improved; b++) {
+          var nr = route.slice();
+          var seg = nr.splice(a, b - a + 1).reverse();
+          nr.splice.apply(nr, [a, 0].concat(seg));
+          if (cost(nr) < cost(route) - 0.001) {
+            route = nr;
+            improved = true;
+          }
+        }
+      }
+    }
+    return route.map(function (i) { return tasks[i].id; });
+  }
+
   global.Planning = {
     minutes: minutes,
     toHHMM: toHHMM,
@@ -703,6 +763,7 @@
     solveRoutes: solveRoutes,
     solveSmartRoutes: solveSmartRoutes,
     solveNearbyRoutes: solveNearbyRoutes,
-    applyRealLegs: applyRealLegs
+    applyRealLegs: applyRealLegs,
+    optimizeRouteOrder: optimizeRouteOrder
   };
 })(window);
