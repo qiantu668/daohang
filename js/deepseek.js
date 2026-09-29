@@ -59,6 +59,11 @@
   }
 
   function buildMessages(input, repairError) {
+    var taskCount = (input.tasks || []).length;
+    var vehicleCount = (input.vehicles || []).length;
+    var avg = vehicleCount ? taskCount / vehicleCount : 0;
+    var minTarget = vehicleCount ? Math.floor(taskCount / vehicleCount) : 0;
+    var maxTarget = vehicleCount ? Math.ceil(taskCount / vehicleCount) : 0;
     var system = [
       '你是上海地区专业配送调度员，负责把任务分给车辆并排访问顺序。',
       '只能输出一个 JSON 对象，不要输出 Markdown、解释、时间或里程估算。',
@@ -66,10 +71,11 @@
       '硬性规则：',
       '1. 必须使用全部车辆，每辆车至少分配一个任务。',
       '2. 每个任务必须且只能出现在一辆车上。',
-      '3. 尽量让每辆车任务数接近平均（总任务数 / 车辆数），不要让某辆车拿到特别多任务。',
-      '4. 按区域就近分车：同一片区的任务尽量放同一辆车，避免一辆车南北大跨度乱跑。',
+      '3. 任务数必须接近平均：总任务 ' + taskCount + ' 个、车辆 ' + vehicleCount + ' 辆，平均每车约 ' + avg.toFixed(1) + ' 个，最少 ' + minTarget + ' 个、最多 ' + maxTarget + ' 个，任意两车相差不要超过 3 个。',
+      '4. 按区域就近分车：同一片区、同一方向的任务尽量放同一辆车，避免把太仓、金山、临港等不同方向或距离很远的点混给同一辆车。',
       '5. 有截止时间的任务要优先安排，顺序尽量在截止时间前到。',
-      '6. taskId 和 vehicleId 必须原样使用输入中的值，每辆车的任务按建议访问顺序填写。',
+      '6. 可以接受各车返回时间有一定差距，优先保证任务数均衡和区域合理，不要为了时间均衡把任务数分得不均。',
+      '7. taskId 和 vehicleId 必须原样使用输入中的值，每辆车的任务按建议访问顺序填写。',
       '',
       '只返回这个 JSON 结构：',
       '{"routes":[{"vehicleId":"v1","stops":[{"taskId":"t1","order":1},{"taskId":"t2","order":2}]}]}',
@@ -247,6 +253,17 @@
     if (out.length !== input.vehicles.length) {
       throw invalid('AI 返回的车辆数量不正确');
     }
+    var counts = out.map(function (r) { return r.stops.length; });
+    var minCount = Math.min.apply(null, counts);
+    var maxCount = Math.max.apply(null, counts);
+    var avgCount = counts.reduce(function (s, c) { return s + c; }, 0) / counts.length;
+    var maxGap = Math.max(3, Math.ceil(avgCount * 0.15));
+    if (maxCount - minCount > maxGap) {
+      throw invalid('任务数分布不均（' + out.map(function (r) {
+        return r.vehicleId + ' ' + r.stops.length + ' 个';
+      }).join('、') + '），请重新分车：每辆车尽量接近 ' + Math.round(avgCount) +
+        ' 个，任意两车相差不要超过 3 个。');
+    }
     return { routes: out };
   }
 
@@ -257,14 +274,16 @@
       missing.repair = false;
       return Promise.reject(missing);
     }
-    var messages = buildMessages(input);
-    return request(key, messages).then(parseContent).then(function (raw) {
-      return normalize(raw, input);
-    }).catch(function (err) {
-      if (!err || !err.repair) throw err;
-      var retryMessages = buildMessages(input, err.message);
-      return request(key, retryMessages).then(parseContent).then(function (raw) {
+    function attempt(msgs) {
+      return request(key, msgs).then(parseContent).then(function (raw) {
         return normalize(raw, input);
+      });
+    }
+    return attempt(buildMessages(input)).catch(function (err) {
+      if (!err || !err.repair) throw err;
+      return attempt(buildMessages(input, err.message)).catch(function (err2) {
+        if (!err2 || !err2.repair) throw err2;
+        return attempt(buildMessages(input, err2.message));
       });
     });
   }
