@@ -291,7 +291,7 @@
     state.tasks.forEach(function (t) { taskById[t.id] = t; });
     var rows = [
       ['车辆', route.plateNo || route.label || '', '司机', route.driverName || '', '电话', route.driverPhone || ''],
-      ['出发', toHHMM(route.startMin), '返回', toHHMM(route.finishMin), '里程(km)', ((route.totalDistanceM || 0) / 1000).toFixed(1), '预计用时(分钟)', route.totalDurationMin || 0]
+      ['出发', toHHMM(route.startMin), '完工/待命', toHHMM(route.finishMin), '里程(km)', ((route.totalDistanceM || 0) / 1000).toFixed(1), '预计用时(分钟)', route.totalDurationMin || 0]
     ];
     rows.push(['序号', '店名 / 收货点', '联系电话', '送货地址', '要求送达', '预计到达', '预计离开', '停靠(分钟)', '备注', '冲突']);
     (route.stops || []).forEach(function (s) {
@@ -327,7 +327,7 @@
     var dateStr = todayString();
 
     if (!vehicleId) {
-      var summaryRows = [['车牌', '司机', '电话', '站点数', '出发', '返回', '总里程(km)', '预计用时(分钟)', '冲突数']];
+      var summaryRows = [['车牌', '司机', '电话', '站点数', '出发', '完工/待命', '总里程(km)', '预计用时(分钟)', '冲突数']];
       routes.forEach(function (r) {
         summaryRows.push([
           r.plateNo || r.label || '',

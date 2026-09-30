@@ -306,11 +306,10 @@
     var offlineBusy = dispatchBusy && dispatchBusyMode === 'offline';
     var aiBusy = dispatchBusy && dispatchBusyMode === 'ai';
     return '<section class="panel dispatch-panel">' +
-      '<div class="panel-head"><div class="panel-title">' + icon('route', 'panel-ico') + '<div><h2>出车设置</h2><p>' + (s.start ? '起点已定位' : '起点未定位') + ' · ' + (s.end ? '终点已定位' : '终点未定位') + '</p></div></div></div>' +
+      '<div class="panel-head"><div class="panel-title">' + icon('route', 'panel-ico') + '<div><h2>出车设置</h2><p>' + (s.start ? '起点已定位' : '起点未定位') + ' · 送完原地待命</p></div></div></div>' +
       '<div class="panel-body">' +
         '<div class="field-grid">' +
           locField('start', '出发地', s.startAddr, !!s.start) +
-          locField('end', '返回地', s.endAddr, !!s.end) +
         '</div>' +
         '<div class="field-row two">' +
           '<div class="field"><label class="tf-label" for="stop-minutes">停靠分钟</label>' +
@@ -321,14 +320,13 @@
         balanceFieldHtml('balance-level', s.balanceLevel) +
         '<div class="field"><label class="tf-label">派车方式</label><div class="segmented">' +
           '<button type="button" class="seg-btn' + (s.dispatchMode !== 'nearby' ? ' is-active' : '') + '" data-dispatch-mode="balanced">' + icon('scale', 'btn-ico') + '时间均衡</button>' +
-          '<button type="button" class="seg-btn' + (s.dispatchMode === 'nearby' ? ' is-active' : '') + '" data-dispatch-mode="nearby">' + icon('map-pin', 'btn-ico') + '就近合车</button>' +
+          '<button type="button" class="seg-btn' + (s.dispatchMode === 'nearby' ? ' is-active' : '') + '" data-dispatch-mode="nearby">' + icon('map-pin', 'btn-ico') + '5公里就近</button>' +
         '</div></div>' +
-        '<label class="switch-row"><input type="checkbox" data-settings-key="roundTrip"' + (s.roundTrip ? ' checked' : '') + '><span class="switch-ui"></span><span class="switch-label">原路返回起点</span></label>' +
         '<div class="field"><label class="tf-label">参与车辆</label><div class="veh-pills">' +
           state.vehicles.map(function (v) { return vehiclePill(state, v); }).join('') +
         '</div></div>' +
-        '<button type="button" class="btn btn-primary btn-block btn-dispatch"' + busy + ' data-action="dispatch" title="综合送达时间、路程和返回时间差进行智能均衡">' +
-          (offlineBusy ? icon('loader', 'btn-ico spin') + '离线排线中...' : icon('route', 'btn-ico') + (s.dispatchMode === 'nearby' ? '就近合车派车' : '智能均衡派车')) +
+        '<button type="button" class="btn btn-primary btn-block btn-dispatch"' + busy + ' data-action="dispatch" title="综合送达时间、路程和附近5公里就近原则进行智能分配">' +
+          (offlineBusy ? icon('loader', 'btn-ico spin') + '离线排线中...' : icon('route', 'btn-ico') + (s.dispatchMode === 'nearby' ? '5公里就近派车' : '智能均衡派车')) +
         '</button>' +
         '<button type="button" class="btn btn-ai btn-block btn-ai-dispatch"' + busy + ' data-action="ai-dispatch" title="调用 DeepSeek 生成最终派车方案，失败自动改用离线算法">' +
           (aiBusy ? icon('loader', 'btn-ico spin') + 'AI 排线中...' : icon('sparkles', 'btn-ico') + 'AI 派车') +
@@ -340,7 +338,7 @@
     var meta = [
       ['站数', r.stops.length + ' 站'],
       ['出发', Planning.toHHMM(r.startMin)],
-      ['返回', Planning.toHHMM(r.finishMin)],
+      ['完工', Planning.toHHMM(r.finishMin)],
       ['里程', km(r.totalDistanceM)],
       ['用时', fmtDuration(r.totalDurationMin)]
     ];
@@ -476,14 +474,14 @@
     var statusLabel = mode.mode === 'amap' ? '已连接实时地图'
       : mode.loading ? '正在连接地图'
       : mode.error ? mode.error
-      : '上海及周边离线粗定位：不调用地图 API';
+      : '上海离线详细路网：不调用地图 API';
     var modeClass = mode.mode === 'amap' ? 'is-amap' : (mode.loading ? 'is-loading' : 'is-demo');
     return pageHeader('设置', '定位模式与派车偏好') +
       '<div class="settings-grid">' +
         '<section class="panel settings-card"><div class="panel-head"><div class="panel-title">' + icon('map', 'panel-ico') + '<div><h2>上海及周边离线粗定位</h2><p>默认无需 Key，上海详细、周边按城市估算</p></div></div></div>' +
           '<div class="panel-body">' +
             '<p class="mode-line"><span class="mode-badge ' + modeClass + '"><i class="mode-dot"></i>' + esc(statusLabel) + '</span></p>' +
-            '<p class="settings-note">上海地址按区县、街道和商圈关键词估算；苏州、昆山、嘉兴等周边城市只按城市中心附近估算，用于分车、排序和预计到达时间，不代表真实门牌位置。</p>' +
+            '<p class="settings-note">上海地址按区县、镇街、商圈和主要道路关键词估算；上海中心城区含 Z14 详细离线路网，放大后可看到路名。苏州、昆山、嘉兴等周边城市只按城市中心附近估算，用于分车、排序和预计到达时间，不代表真实门牌位置。</p>' +
             '<div class="field"><label class="tf-label" for="amap-key-input">高德 JS API Key</label>' +
               '<div class="key-row"><input id="amap-key-input" class="input" type="text" value="' + esc(s.amapKey) + '" placeholder="粘贴 Key" maxlength="80">' +
                 '<button type="button" class="btn btn-ghost" data-action="connect-amap">' + icon('plug', 'btn-ico') + '可选连接</button></div>' +
@@ -568,12 +566,12 @@
         '<span><b>' + summary.taskCount + '</b>个站点</span>' +
         '<span><b>' + km(summary.totalDistanceM) + '</b>总里程</span>' +
         '<span class="' + (summary.conflictCount ? 'is-warn' : 'is-ok') + '"><b>' + summary.conflictCount + '</b>个冲突</span>' +
-        '<span class="' + (returnSpreadMin <= 15 ? 'is-ok' : 'is-warn') + '"><b>' + fmtDuration(returnSpreadMin) + '</b>返回差</span>' +
+        '<span class="' + (returnSpreadMin <= 15 ? 'is-ok' : 'is-warn') + '"><b>' + fmtDuration(returnSpreadMin) + '</b>完工差</span>' +
       '</div>' +
       loadHtml +
       '<div class="route-list">' + result.routes.map(function (r) { return routeCard(state, r); }).join('') + '</div>' +
       '<div class="map-head"><div class="map-title"><h3>路线图</h3>' +
-        (Geo.isAmap() ? '<span class="mode-chip">实时地图</span>' : '<span class="mode-chip">上海及周边离线估算</span>') +
+        (Geo.isAmap() ? '<span class="mode-chip">实时地图</span>' : '<span class="mode-chip">上海离线路网</span>') +
       '</div><button type="button" class="btn btn-ghost btn-sm map-expand-btn" data-action="expand-map" title="放大查看路线图">' +
         icon('maximize-2', 'btn-ico') + '放大查看' +
       '</button>' +
@@ -585,8 +583,7 @@
   function buildMapData(state) {
     var result = state.result;
     var start = state.settings.start;
-    var end = state.settings.roundTrip ? start : state.settings.end;
-    if (!result || !start || !end) return null;
+    if (!result || !start) return null;
     var routes = result.routes.map(function (r) {
       var stops = (r.stops || []).map(function (s) {
         var t = taskById(state, s.taskId) || {};
@@ -601,7 +598,7 @@
       if (!out.waypoints || !out.waypoints.length) {
         var pts = [start].concat(stops.map(function (s) {
           return { lng: s.lng, lat: s.lat };
-        })).concat([end]);
+        }));
         var legs = Geo.demoLegs(pts);
         var waypoints = [];
         legs.forEach(function (leg) {
@@ -617,7 +614,7 @@
       }
       return out;
     });
-    return { start: start, end: end, routes: routes };
+    return { start: start, end: null, routes: routes };
   }
 
   function parseViewBox(svg) {
@@ -646,11 +643,13 @@
     var nx = Math.max(0, Math.min(W - nw, cx - rx * nw));
     var ny = Math.max(0, Math.min(H - nh, cy - ry * nh));
     applyViewBox(svg, { x: nx, y: ny, w: nw, h: nh });
+    if (Geo && Geo.refreshOfflineLayer) Geo.refreshOfflineLayer(svg);
   }
 
   function resetDemoMap(svg) {
     if (!svg) return;
     svg.setAttribute('viewBox', svg.getAttribute('data-initial-viewbox') || '0 0 900 520');
+    if (Geo && Geo.refreshOfflineLayer) Geo.refreshOfflineLayer(svg);
   }
 
   function panDemoMap(svg, base, dx, dy) {
@@ -660,6 +659,7 @@
     var nx = Math.max(0, Math.min(W - base.w, base.x - dx));
     var ny = Math.max(0, Math.min(H - base.h, base.y - dy));
     applyViewBox(svg, { x: nx, y: ny, w: base.w, h: base.h });
+    if (Geo && Geo.refreshOfflineLayer) Geo.refreshOfflineLayer(svg);
   }
 
   function attachDemoMapInteractions(svg) {
@@ -928,8 +928,7 @@
     var snapshot = Store.getState();
     var result = snapshot.result;
     var start = snapshot.settings.start;
-    var end = snapshot.settings.roundTrip ? start : snapshot.settings.end;
-    if (!result || !start || !end) return;
+    if (!result || !start) return;
     var token = ++routeRebuildToken;
     var routes = JSON.parse(JSON.stringify(result.routes));
     var planTasks = snapshot.tasks.map(function (t) {
@@ -949,7 +948,7 @@
       var points = [start].concat(r.stops.map(function (s) {
         var t = taskById(snapshot, s.taskId);
         return t && t.lng != null && t.lat != null ? { lng: t.lng, lat: t.lat } : null;
-      }).filter(Boolean)).concat([end]);
+      }).filter(Boolean));
       if (points.length < 2) return Promise.resolve([]);
       return Geo.routeLegs(points).then(function (legs) { r.legs = legs; });
     })).then(function () {
@@ -1465,8 +1464,6 @@
 
   function prepareDispatchContext(state, settings, tasks) {
     var start = settings.start;
-    var end = settings.end;
-    var roundTrip = !!settings.roundTrip;
     var chain = Promise.resolve();
 
     if (!start || start.lng == null) {
@@ -1478,16 +1475,6 @@
         Store.updateSettings({ startAddr: loc.formatted || settings.startAddr, start: start });
       });
     }
-    if (!roundTrip && (!end || end.lng == null)) {
-      chain = chain.then(function () {
-        if (!(settings.endAddr || '').trim()) throw new Error('请设置返回地');
-        return Geo.geocode(settings.endAddr);
-      }).then(function (loc) {
-        end = { lng: loc.lng, lat: loc.lat };
-        Store.updateSettings({ endAddr: loc.formatted || settings.endAddr, end: end });
-      });
-    }
-
     return chain.then(function () {
       var queue = tasks.filter(function (t) { return t.lng == null || t.lat == null; });
       return queue.reduce(function (p, t) {
@@ -1506,8 +1493,6 @@
       var vehicles = activeVehicles(latest);
       if (!vehicles.length) throw new Error('请至少勾选一辆车');
       if (!start) throw new Error('请设置出发地');
-      if (!roundTrip && !end) throw new Error('请设置返回地');
-      var planEnd = roundTrip ? start : end;
       var planTasks = tasks.map(function (t) {
         return {
           id: t.id,
@@ -1524,8 +1509,7 @@
         settings: latest.settings,
         vehicles: vehicles,
         start: start,
-        end: planEnd,
-        roundTrip: roundTrip,
+        end: null,
         planTasks: planTasks
       };
     });
@@ -1542,7 +1526,7 @@
     return [ctx.start].concat((route.stops || []).map(function (s) {
       var t = taskMap[s.taskId];
       return t ? { lng: t.lng, lat: t.lat } : null;
-    }).filter(Boolean)).concat([ctx.end]);
+    }).filter(Boolean));
   }
 
   function attachDisplayLegs(routes, ctx) {

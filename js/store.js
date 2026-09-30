@@ -47,7 +47,7 @@
       balanceLevel: 70,
       dispatchMode: 'balanced',
       roundTrip: false,
-      nearbyDistanceM: 15000,
+      nearbyDistanceM: 5000,
       activeVehicleIds: DEFAULT_VEHICLES.map(function (v) { return v.id; }),
       amapKey: '',
       amapSecurityCode: '',
@@ -73,7 +73,8 @@
     out.balanceLevel = clampInt(out.balanceLevel, 0, 100, 70);
     out.dispatchMode = out.dispatchMode === 'nearby' ? 'nearby' : 'balanced';
     out.roundTrip = !!out.roundTrip;
-    out.nearbyDistanceM = clampInt(out.nearbyDistanceM, 5000, 30000, 15000);
+    out.nearbyDistanceM = clampInt(out.nearbyDistanceM, 5000, 30000, 5000);
+    if (out.nearbyDistanceM === 15000) out.nearbyDistanceM = 5000;
     out.deepseekKey = sanitizeText(out.deepseekKey, 200);
     out.activeVehicleIds = Array.isArray(out.activeVehicleIds) ? out.activeVehicleIds : [];
     return out;
@@ -412,8 +413,8 @@
         s.tasks = JSON.parse(JSON.stringify(DEMO_TASKS));
         s.settings.startAddr = '上海市普陀区真北路 800 号（配送中心）';
         s.settings.start = { lng: 121.3956, lat: 31.2495 };
-        s.settings.endAddr = '上海市普陀区真北路 800 号（配送中心）';
-        s.settings.end = { lng: 121.3956, lat: 31.2495 };
+        s.settings.endAddr = '';
+        s.settings.end = null;
         s.settings.activeVehicleIds = s.vehicles.map(function (v) { return v.id; });
         s.result = null;
         resequence(s);

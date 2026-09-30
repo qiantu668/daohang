@@ -33,9 +33,7 @@
       defaultStartTime: input.defaultStartTime,
       defaultStartMin: input.defaultStartMin,
       stopMinutes: input.stopMinutes,
-      roundTrip: !!input.roundTrip,
       start: input.start,
-      end: input.end,
       vehicles: input.vehicles.map(function (v) {
         return {
           id: v.id,
@@ -74,8 +72,9 @@
       '3. 任务数必须接近平均：总任务 ' + taskCount + ' 个、车辆 ' + vehicleCount + ' 辆，平均每车约 ' + avg.toFixed(1) + ' 个，最少 ' + minTarget + ' 个、最多 ' + maxTarget + ' 个，任意两车相差不要超过 3 个。',
       '4. 按区域就近分车：同一片区、同一方向的任务尽量放同一辆车，避免把太仓、金山、临港等不同方向或距离很远的点混给同一辆车。',
       '5. 有截止时间的任务要优先安排，顺序尽量在截止时间前到。',
-      '6. 可以接受各车返回时间有一定差距，优先保证任务数均衡和区域合理，不要为了时间均衡把任务数分得不均。',
-      '7. taskId 和 vehicleId 必须原样使用输入中的值，每辆车的任务按建议访问顺序填写。',
+      '6. 每辆车到达一个点后，优先安排它周边5公里内的其他任务；周边没有5公里内任务时再选择较近的下一点。',
+      '7. 车辆送完最后一站后原地待命，不需要返回出发地，也不要为“返回时间”绕路。',
+      '8. taskId 和 vehicleId 必须原样使用输入中的值，每辆车的任务按建议访问顺序填写。',
       '',
       '只返回这个 JSON 结构：',
       '{"routes":[{"vehicleId":"v1","stops":[{"taskId":"t1","order":1},{"taskId":"t2","order":2}]}]}',
@@ -224,7 +223,7 @@
 
       var startMin = toMinute(r.startMin, input.defaultStartMin);
       var last = normalizedStops[normalizedStops.length - 1];
-      var finishMin = toMinute(r.finishMin, (last ? last.departMin : startMin) + Math.max(0, toNum(r.returnDriveMin, 0)));
+      var finishMin = toMinute(r.finishMin, last ? last.departMin : startMin);
       out.push({
         vehicleId: vehicle.id,
         label: vehicle.label || ('车 ' + (out.length + 1)),

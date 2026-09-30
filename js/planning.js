@@ -23,10 +23,11 @@
 
   function buildMatrix(start, tasks, end) {
     var coords = [start]
-      .concat(tasks.map(function (t) { return { lng: t.lng, lat: t.lat }; }))
-      .concat([end]);
+      .concat(tasks.map(function (t) { return { lng: t.lng, lat: t.lat }; }));
     var n = tasks.length;
-    var size = n + 2;
+    var hasEnd = !!(end && end.lng != null && end.lat != null);
+    if (hasEnd) coords.push(end);
+    var size = n + (hasEnd ? 2 : 1);
     var dist = [];
     var time = [];
     for (var i = 0; i < size; i++) {
@@ -42,7 +43,7 @@
         }
       }
     }
-    return { coords: coords, dist: dist, time: time, n: n, size: size };
+    return { coords: coords, dist: dist, time: time, n: n, size: size, hasEnd: hasEnd };
   }
 
   function solveRoutes(opts) {
@@ -51,6 +52,8 @@
     var matrix = opts.matrix;
     var n = tasks.length;
     var k = vehicles.length;
+    var hasEnd = !!matrix.hasEnd;
+    var nearbyDistanceM = Number(opts.nearbyDistanceM) > 0 ? Number(opts.nearbyDistanceM) : 5000;
     if (!n) throw new Error('没有可排任务');
     if (!k) throw new Error('没有可用车辆');
     var routes = [];
@@ -66,7 +69,9 @@
     for (var vi = 0; vi < k; vi++) routes.push([]);
 
     function seq(route) {
-      return [0].concat(route.map(function (x) { return x + 1; })).concat([n + 1]);
+      var out = [0].concat(route.map(function (x) { return x + 1; }));
+      if (hasEnd) out.push(n + 1);
+      return out;
     }
 
     function travel(route) {
@@ -122,7 +127,7 @@
       });
       return {
         startMin: start,
-        finishMin: cur + matrix.time[prev][n + 1],
+        finishMin: hasEnd ? cur + matrix.time[prev][n + 1] : cur,
         conflictCount: conflicts
       };
     }
@@ -151,7 +156,55 @@
       return c;
     }
 
+    function reorderNearbyFirst(route) {
+      var remaining = route.slice();
+      var out = [];
+      var prev = 0;
+      while (remaining.length) {
+        var nearby = remaining.filter(function (i) {
+          return matrix.dist[prev][i + 1] <= nearbyDistanceM;
+        });
+        var candidates = nearby.length ? nearby : remaining;
+        var best = candidates[0];
+        var bestDist = matrix.dist[prev][best + 1];
+        for (var ci = 1; ci < candidates.length; ci++) {
+          var d = matrix.dist[prev][candidates[ci] + 1];
+          if (d < bestDist) {
+            best = candidates[ci];
+            bestDist = d;
+          }
+        }
+        out.push(best);
+        remaining.splice(remaining.indexOf(best), 1);
+        prev = best + 1;
+      }
+      return out;
+    }
+
+    function nearbyViolations(route) {
+      var remaining = route.slice();
+      var prev = 0;
+      var count = 0;
+      route.forEach(function (i) {
+        remaining.splice(remaining.indexOf(i), 1);
+        var hasNearby = remaining.some(function (j) {
+          return matrix.dist[prev][j + 1] <= nearbyDistanceM;
+        });
+        if (hasNearby && matrix.dist[prev][i + 1] > nearbyDistanceM) count++;
+        prev = i + 1;
+      });
+      return count;
+    }
+
     function improveRouteOrder(route) {
+      if (route.length > 1) {
+        var nearbyOrder = reorderNearbyFirst(route);
+        if (nearbyOrder.join('|') !== route.join('|') &&
+            travel(nearbyOrder) <= travel(route) * 1.1 &&
+            routeCost(nearbyOrder) <= routeCost(route) + 15) {
+          route.splice.apply(route, [0, route.length].concat(nearbyOrder));
+        }
+      }
       var changed = true;
       while (changed) {
         changed = false;
@@ -165,6 +218,15 @@
               changed = true;
             }
           }
+        }
+      }
+      var finalNearby = reorderNearbyFirst(route);
+      if (finalNearby.join('|') !== route.join('|')) {
+        var beforeViolations = nearbyViolations(route);
+        var afterViolations = nearbyViolations(finalNearby);
+        if (afterViolations < beforeViolations ||
+            (afterViolations === beforeViolations && routeCost(finalNearby) < routeCost(route) - 0.001)) {
+          route.splice.apply(route, [0, route.length].concat(finalNearby));
         }
       }
     }
@@ -399,6 +461,8 @@
       order.splice(order.indexOf(pick.i), 1);
     }
 
+    routes.forEach(function (r) { improveRouteOrder(r); });
+
     var improved = true;
     var iter = 0;
     while (improved && iter < 90) {
@@ -466,6 +530,7 @@
 
     rebalanceRoutes(routes);
     rebalanceReturnTimes(routes);
+    routes.forEach(function (r) { improveRouteOrder(r); });
 
     return vehicles.map(function (v, ri) {
       var timeline = computeRouteTimeline(routes[ri], opts);
@@ -543,10 +608,10 @@
     var thresholdM = Number(opts.nearbyDistanceM) > 0 ? Number(opts.nearbyDistanceM) : 15000;
     var clusters = clusterTasksByProximity(tasks, k, thresholdM);
     var start = opts.matrix.coords[0];
-    var end = opts.matrix.coords[opts.matrix.size - 1];
+    var end = opts.matrix.hasEnd ? opts.matrix.coords[opts.matrix.size - 1] : null;
     var routes = clusters.map(function (cluster, ci) {
       var subTasks = cluster.map(function (i) { return tasks[i]; });
-      var subMatrix = buildMatrix(start, subTasks, end);
+      var subMatrix = buildMatrix(start, subTasks, null);
       var out = solveRoutes(Object.assign({}, opts, {
         tasks: subTasks,
         vehicles: [vehicles[ci % k]],
@@ -604,12 +669,14 @@
       totalDist += dist;
       totalDur += drive + opts.stopMinutes;
     });
-    totalDur += matrix.time[prev][n + 1];
-    totalDist += matrix.dist[prev][n + 1];
+    if (matrix.hasEnd) {
+      totalDur += matrix.time[prev][n + 1];
+      totalDist += matrix.dist[prev][n + 1];
+    }
     return {
       stops: stops,
       startMin: start,
-      finishMin: cur + matrix.time[prev][n + 1],
+      finishMin: cur,
       totalDistanceM: totalDist,
       totalDurationMin: totalDur
     };
@@ -666,7 +733,7 @@
       r.legs = legs;
       r.waypoints = waypoints;
       r.startMin = start;
-      r.finishMin = legs.length ? cur + legs[legs.length - 1].durationMin : start;
+      r.finishMin = legs.length ? cur : start;
       r.totalDistanceM = legs.reduce(function (sum, leg) { return sum + leg.distanceM; }, 0);
       r.totalDurationMin = legs.reduce(function (sum, leg) { return sum + leg.durationMin; }, 0) + stops.length * opts.stopMinutes;
       r.conflictCount = stops.filter(function (s) { return s.conflict; }).length;
@@ -700,15 +767,19 @@
     var tasks = opts.tasks || [];
     if (!tasks.length) return [];
     var start = opts.start;
-    var end = opts.end || start;
+    var end = opts.end || null;
     var matrix = buildMatrix(start, tasks, end);
     var route = tasks.map(function (_, i) { return i; });
+    var hasEnd = !!matrix.hasEnd;
+    var nearbyDistanceM = Number(opts.nearbyDistanceM) > 0 ? Number(opts.nearbyDistanceM) : 5000;
     var defaultStart = minutes(opts.defaultStartTime);
     if (defaultStart == null) defaultStart = 480;
     var stopMinutes = Math.max(0, Number(opts.stopMinutes) || 0);
 
     function seq(r) {
-      return [0].concat(r.map(function (x) { return x + 1; })).concat([matrix.n + 1]);
+      var out = [0].concat(r.map(function (x) { return x + 1; }));
+      if (hasEnd) out.push(matrix.n + 1);
+      return out;
     }
 
     function travel(r) {
@@ -736,6 +807,46 @@
       return travel(r) + penalty(r);
     }
 
+    function nearbyViolations(r) {
+      var remaining = r.slice();
+      var prev = 0;
+      var count = 0;
+      r.forEach(function (i) {
+        remaining.splice(remaining.indexOf(i), 1);
+        var hasNearby = remaining.some(function (j) {
+          return matrix.dist[prev][j + 1] <= nearbyDistanceM;
+        });
+        if (hasNearby && matrix.dist[prev][i + 1] > nearbyDistanceM) count++;
+        prev = i + 1;
+      });
+      return count;
+    }
+
+    route = (function nearbyOrder(r) {
+      var remaining = r.slice();
+      var out = [];
+      var prev = 0;
+      while (remaining.length) {
+        var nearby = remaining.filter(function (i) {
+          return matrix.dist[prev][i + 1] <= nearbyDistanceM;
+        });
+        var candidates = nearby.length ? nearby : remaining;
+        var best = candidates[0];
+        var bestDist = matrix.dist[prev][best + 1];
+        for (var ci = 1; ci < candidates.length; ci++) {
+          var d = matrix.dist[prev][candidates[ci] + 1];
+          if (d < bestDist) {
+            best = candidates[ci];
+            bestDist = d;
+          }
+        }
+        out.push(best);
+        remaining.splice(remaining.indexOf(best), 1);
+        prev = best + 1;
+      }
+      return out;
+    })(route);
+
     var improved = true;
     var guard = 0;
     while (improved && guard < 300) {
@@ -751,6 +862,38 @@
             improved = true;
           }
         }
+      }
+    }
+    var finalNearby = (function (r) {
+      var remaining = r.slice();
+      var out = [];
+      var prev = 0;
+      while (remaining.length) {
+        var nearby = remaining.filter(function (i) {
+          return matrix.dist[prev][i + 1] <= nearbyDistanceM;
+        });
+        var candidates = nearby.length ? nearby : remaining;
+        var best = candidates[0];
+        var bestDist = matrix.dist[prev][best + 1];
+        for (var ci = 1; ci < candidates.length; ci++) {
+          var d = matrix.dist[prev][candidates[ci] + 1];
+          if (d < bestDist) {
+            best = candidates[ci];
+            bestDist = d;
+          }
+        }
+        out.push(best);
+        remaining.splice(remaining.indexOf(best), 1);
+        prev = best + 1;
+      }
+      return out;
+    })(route);
+    if (finalNearby.join('|') !== route.join('|')) {
+      var beforeViolations = nearbyViolations(route);
+      var afterViolations = nearbyViolations(finalNearby);
+      if (afterViolations < beforeViolations ||
+          (afterViolations === beforeViolations && cost(finalNearby) < cost(route) - 0.001)) {
+        route = finalNearby;
       }
     }
     return route.map(function (i) { return tasks[i].id; });

@@ -6,25 +6,119 @@
   var AVG_SPEED = 30;
   var OFFLINE_TIME_BUFFER = 1.2;
   var DEMO_CENTER = { lng: 121.47, lat: 31.23 };
-  var OFFLINE_SHANGHAI_MAP = {
-    zoom: 10,
-    x0: 855,
-    y0: 415,
-    cols: 5,
-    rows: 6,
-    tileSize: 256,
-    dir: 'assets/map/shanghai-z10/',
-    west: 120.5859375,
-    east: 122.34375,
-    south: 30.448673679287566,
-    north: 32.249974455863295
-  };
+  var OFFLINE_MAP_LAYERS = [
+    {
+      zoom: 10,
+      x0: 855,
+      y0: 415,
+      cols: 5,
+      rows: 6,
+      tileSize: 256,
+      dir: 'assets/map/shanghai-z10/',
+      west: 120.5859375,
+      east: 122.34375,
+      south: 30.448673679287566,
+      north: 32.249974455863295
+    },
+    {
+      zoom: 12,
+      x0: 3428,
+      y0: 1670,
+      cols: 5,
+      rows: 8,
+      tileSize: 256,
+      dir: 'assets/map/shanghai-z12/',
+      west: 121.30,
+      east: 121.72,
+      south: 30.95,
+      north: 31.50
+    },
+    {
+      zoom: 13,
+      x0: 6856,
+      y0: 3340,
+      cols: 10,
+      rows: 15,
+      tileSize: 256,
+      dir: 'assets/map/shanghai-z13/',
+      west: 121.30,
+      east: 121.72,
+      south: 30.95,
+      north: 31.50
+    },
+    {
+      zoom: 14,
+      x0: 13717,
+      y0: 6684,
+      cols: 11,
+      rows: 21,
+      tileSize: 256,
+      dir: 'assets/map/shanghai-z14/',
+      west: 121.40,
+      east: 121.62,
+      south: 31.05,
+      north: 31.42
+    }
+  ];
 
   var ROUGH_REGIONS = [
-    { keys: ['上海市松江区', '松江区', '佘山镇', '泗泾镇', '九亭镇'], lng: 121.2277, lat: 31.0326, radiusLng: 0.08, radiusLat: 0.05 },
-    { keys: ['上海市闵行区', '闵行区', '七宝镇', '莘庄镇'], lng: 121.3817, lat: 31.1129, radiusLng: 0.08, radiusLat: 0.05 },
-    { keys: ['上海市青浦区', '青浦区', '徐泾镇'], lng: 121.1242, lat: 31.1507, radiusLng: 0.09, radiusLat: 0.06 },
-    { keys: ['上海市浦东新区', '浦东新区', '张江', '陆家嘴'], lng: 121.5447, lat: 31.2222, radiusLng: 0.11, radiusLat: 0.07 },
+    { keys: ['召楼路'], lng: 121.5070, lat: 31.0700, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['竹园路'], lng: 121.4910, lat: 31.0620, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['沈梅东路'], lng: 121.5850, lat: 31.1160, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['三三公路', '振东路'], lng: 121.8320, lat: 30.9850, radiusLng: 0.035, radiusLat: 0.022 },
+    { keys: ['芦硕路', '方竹路', '水芸路'], lng: 121.9250, lat: 30.9010, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['龙吴路'], lng: 121.4590, lat: 31.0480, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['颛兴路'], lng: 121.4030, lat: 31.0730, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['山林道', '老宅里路'], lng: 121.4140, lat: 31.1170, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['石龙路', '浦北路'], lng: 121.4210, lat: 31.1600, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['漕宝路'], lng: 121.3850, lat: 31.1660, radiusLng: 0.035, radiusLat: 0.022 },
+    { keys: ['紫藤路'], lng: 121.3690, lat: 31.1970, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['丹巴路'], lng: 121.3890, lat: 31.2240, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['虹梅南路'], lng: 121.4050, lat: 31.1550, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['曹安路'], lng: 121.3240, lat: 31.2400, radiusLng: 0.045, radiusLat: 0.028 },
+    { keys: ['鹤槎路'], lng: 121.3180, lat: 31.2420, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['宝安公路'], lng: 121.2810, lat: 31.3810, radiusLng: 0.045, radiusLat: 0.028 },
+    { keys: ['嘉戬公路'], lng: 121.2940, lat: 31.3930, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['叶城路'], lng: 121.2380, lat: 31.4060, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['祁昌路'], lng: 121.2350, lat: 31.4140, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['瞿门路'], lng: 121.1750, lat: 31.3720, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['海仓路'], lng: 121.1160, lat: 31.4490, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['康桥路'], lng: 121.5770, lat: 31.1520, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['环科路', '高科中路'], lng: 121.6080, lat: 31.2030, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['运盐河路'], lng: 121.6840, lat: 31.1350, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['顾唐路'], lng: 121.6320, lat: 31.2470, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['佳林路', '金桥路', '栖山路'], lng: 121.6050, lat: 31.2620, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['双阳支路', '控江路', '本溪路'], lng: 121.5230, lat: 31.2840, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['祥德路', '东江湾路'], lng: 121.4800, lat: 31.2730, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['国权北路', '新二路', '殷高西路'], lng: 121.4900, lat: 31.3280, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['共和新路', '新沪路'], lng: 121.4510, lat: 31.2920, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['聚丰园路'], lng: 121.3830, lat: 31.3410, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['陆翔路', '红林路'], lng: 121.4270, lat: 31.3750, radiusLng: 0.035, radiusLat: 0.022 },
+    { keys: ['共宝路'], lng: 121.4490, lat: 31.3370, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['潘泾路'], lng: 121.3870, lat: 31.4080, radiusLng: 0.045, radiusLat: 0.028 },
+    { keys: ['市一路', '集贤路', '罗东路'], lng: 121.3630, lat: 31.4620, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['上南路', '三林路', '杨南路'], lng: 121.5100, lat: 31.1420, radiusLng: 0.035, radiusLat: 0.022 },
+    { keys: ['长乐路'], lng: 121.4560, lat: 31.2140, radiusLng: 0.02, radiusLat: 0.013 },
+    { keys: ['定西路'], lng: 121.4320, lat: 31.2170, radiusLng: 0.02, radiusLat: 0.013 },
+    { keys: ['黄陂南路', '河南南路'], lng: 121.4820, lat: 31.2180, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['金闸公路'], lng: 121.5010, lat: 30.9730, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['国顺路', '通阳路'], lng: 121.4640, lat: 30.9270, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['海思路'], lng: 121.4550, lat: 30.8870, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['海汇街'], lng: 121.3340, lat: 30.7420, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['朱枫公路'], lng: 121.1000, lat: 30.9100, radiusLng: 0.08, radiusLat: 0.05 },
+    { keys: ['三新路'], lng: 121.2120, lat: 31.0400, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['文翔路'], lng: 121.2160, lat: 31.0480, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['平原公路'], lng: 121.1530, lat: 30.9790, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['王家库路'], lng: 121.1850, lat: 31.0320, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['沪松公路'], lng: 121.2530, lat: 31.1240, radiusLng: 0.045, radiusLat: 0.028 },
+    { keys: ['泗宝路'], lng: 121.2630, lat: 31.1170, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['华志路'], lng: 121.2300, lat: 31.2320, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['龙联路'], lng: 121.3010, lat: 31.1830, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['沪亭北路', '蒲汇路'], lng: 121.3300, lat: 31.1700, radiusLng: 0.025, radiusLat: 0.016 },
+    { keys: ['上海市松江区', '松江区', '佘山镇'], lng: 121.2277, lat: 31.0326, radiusLng: 0.08, radiusLat: 0.05 },
+    { keys: ['上海市闵行区', '闵行区'], lng: 121.3817, lat: 31.1129, radiusLng: 0.08, radiusLat: 0.05 },
+    { keys: ['上海市青浦区', '青浦区'], lng: 121.1242, lat: 31.1507, radiusLng: 0.09, radiusLat: 0.06 },
+    { keys: ['上海市浦东新区', '浦东新区', '陆家嘴'], lng: 121.5447, lat: 31.2222, radiusLng: 0.11, radiusLat: 0.07 },
     { keys: ['上海市嘉定区', '嘉定区'], lng: 121.2653, lat: 31.3756, radiusLng: 0.09, radiusLat: 0.06 },
     { keys: ['黄浦区', '人民广场', '外滩'], lng: 121.4905, lat: 31.2343, radiusLng: 0.05, radiusLat: 0.04 },
     { keys: ['徐汇区', '徐家汇'], lng: 121.4368, lat: 31.1883, radiusLng: 0.07, radiusLat: 0.05 },
@@ -34,6 +128,40 @@
     { keys: ['虹口区', '虹口'], lng: 121.4917, lat: 31.2646, radiusLng: 0.06, radiusLat: 0.04 },
     { keys: ['杨浦区', '五角场'], lng: 121.5137, lat: 31.3008, radiusLng: 0.07, radiusLat: 0.05 },
     { keys: ['上海市', '上海'], lng: 121.4737, lat: 31.2304, radiusLng: 0.22, radiusLat: 0.14 },
+
+    { keys: ['浦江镇'], lng: 121.5030, lat: 31.0690, radiusLng: 0.045, radiusLat: 0.028 },
+    { keys: ['周浦镇'], lng: 121.5800, lat: 31.1110, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['奉城镇'], lng: 121.6610, lat: 30.9130, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['四团镇'], lng: 121.7350, lat: 30.9370, radiusLng: 0.045, radiusLat: 0.028 },
+    { keys: ['泥城镇'], lng: 121.8390, lat: 30.9030, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['南汇新城镇', '临港新城', '临港'], lng: 121.9250, lat: 30.9010, radiusLng: 0.07, radiusLat: 0.045 },
+    { keys: ['书院镇'], lng: 121.8300, lat: 30.9880, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['吴泾镇'], lng: 121.4650, lat: 31.0440, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['颛桥镇'], lng: 121.3970, lat: 31.0720, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['莘庄镇', '莘庄'], lng: 121.3830, lat: 31.1140, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['梅陇镇'], lng: 121.4210, lat: 31.1200, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['漕河泾街道', '漕河泾'], lng: 121.4170, lat: 31.1620, radiusLng: 0.03, radiusLat: 0.02 },
+    { keys: ['江桥镇'], lng: 121.3250, lat: 31.2380, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['马陆镇'], lng: 121.2870, lat: 31.3740, radiusLng: 0.06, radiusLat: 0.04 },
+    { keys: ['菊园新区'], lng: 121.2350, lat: 31.3980, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['外冈镇'], lng: 121.1780, lat: 31.3680, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['唐镇'], lng: 121.6520, lat: 31.2050, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['张江镇', '张江'], lng: 121.6050, lat: 31.2000, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['祝桥镇'], lng: 121.7460, lat: 31.1060, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['康桥镇'], lng: 121.5740, lat: 31.1510, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['金桥镇', '金桥'], lng: 121.6250, lat: 31.2650, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['高行镇'], lng: 121.5980, lat: 31.3110, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['顾村镇'], lng: 121.4220, lat: 31.3510, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['杨行镇'], lng: 121.4450, lat: 31.3880, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['罗店镇'], lng: 121.3480, lat: 31.4630, radiusLng: 0.06, radiusLat: 0.04 },
+    { keys: ['金汇镇'], lng: 121.4930, lat: 30.9700, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['南桥镇'], lng: 121.4600, lat: 30.9180, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['泗泾镇'], lng: 121.2540, lat: 31.1110, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['华新镇'], lng: 121.2210, lat: 31.2380, radiusLng: 0.05, radiusLat: 0.032 },
+    { keys: ['徐泾镇'], lng: 121.3020, lat: 31.1850, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['七宝镇', '七宝'], lng: 121.3610, lat: 31.1580, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['华漕镇'], lng: 121.3030, lat: 31.2140, radiusLng: 0.04, radiusLat: 0.025 },
+    { keys: ['城厢镇'], lng: 121.1220, lat: 31.4480, radiusLng: 0.04, radiusLat: 0.025 },
 
     { keys: ['崇明区', '崇明岛'], lng: 121.3976, lat: 31.6269, radiusLng: 0.12, radiusLat: 0.08 },
     { keys: ['奉贤区', '奉贤'], lng: 121.4740, lat: 30.9180, radiusLng: 0.12, radiusLat: 0.08 },
@@ -469,20 +597,90 @@
     return { x: x, y: y };
   }
 
-  function offlineTileSvg() {
+  var OFFLINE_MASTER_ZOOM = OFFLINE_MAP_LAYERS[OFFLINE_MAP_LAYERS.length - 1].zoom;
+  var OFFLINE_BASE_LAYER = OFFLINE_MAP_LAYERS[0];
+
+  function layerScale(layer) {
+    return Math.pow(2, OFFLINE_MASTER_ZOOM - layer.zoom);
+  }
+
+  function layerExtent(layer) {
+    var scale = layerScale(layer);
+    return {
+      w: layer.cols * layer.tileSize * scale,
+      h: layer.rows * layer.tileSize * scale,
+      origin: webMercatorPx(layer.west, layer.north, OFFLINE_MASTER_ZOOM)
+    };
+  }
+
+  function layersContaining(points) {
+    return OFFLINE_MAP_LAYERS.filter(function (layer) {
+      return points.every(function (p) {
+        return p.lng >= layer.west && p.lng <= layer.east &&
+          p.lat >= layer.south && p.lat <= layer.north;
+      });
+    });
+  }
+
+  function chooseMapLayer(viewBox, points, px) {
+    var visible = points;
+    if (px && points.length) {
+      var x0 = viewBox.x;
+      var y0 = viewBox.y;
+      var x1 = viewBox.x + viewBox.w;
+      var y1 = viewBox.y + viewBox.h;
+      visible = points.filter(function (p) {
+        var q = px(p);
+        return q[0] >= x0 && q[0] <= x1 && q[1] >= y0 && q[1] <= y1;
+      });
+      if (!visible.length) visible = points;
+    }
+    var candidates = layersContaining(visible);
+    if (!candidates.length) return null;
+    var best = candidates[0];
+    candidates.forEach(function (layer) {
+      var ext = layerExtent(layer);
+      var fits = viewBox.w <= ext.w * 1.02 && viewBox.h <= ext.h * 1.02;
+      if (fits && layer.zoom > best.zoom) best = layer;
+    });
+    return best;
+  }
+
+  function offlineTileSvg(layer) {
     var out = '';
-    var m = OFFLINE_SHANGHAI_MAP;
-    for (var row = 0; row < m.rows; row++) {
-      for (var col = 0; col < m.cols; col++) {
-        var x = m.x0 + col;
-        var y = m.y0 + row;
-        out += '<image href="' + m.dir + m.zoom + '-' + x + '-' + y + '.png" ' +
-          'x="' + (col * m.tileSize) + '" y="' + (row * m.tileSize) + '" ' +
-          'width="' + m.tileSize + '" height="' + m.tileSize + '" ' +
+    var scale = layerScale(layer);
+    var ext = layerExtent(layer);
+    for (var row = 0; row < layer.rows; row++) {
+      for (var col = 0; col < layer.cols; col++) {
+        var x = layer.x0 + col;
+        var y = layer.y0 + row;
+        out += '<image href="' + layer.dir + layer.zoom + '-' + x + '-' + y + '.png" ' +
+          'x="' + (ext.origin.x + col * layer.tileSize * scale) + '" ' +
+          'y="' + (ext.origin.y + row * layer.tileSize * scale) + '" ' +
+          'width="' + (layer.tileSize * scale) + '" height="' + (layer.tileSize * scale) + '" ' +
           'preserveAspectRatio="none" class="dm-tile"/>';
       }
     }
     return out;
+  }
+
+  function currentViewBox(svg) {
+    var parts = String(svg.getAttribute('viewBox') || '0 0 900 520').split(/\s+/).map(Number);
+    return { x: parts[0] || 0, y: parts[1] || 0, w: parts[2] || 900, h: parts[3] || 520 };
+  }
+
+  function refreshOfflineLayer(svg) {
+    var group = svg && svg.querySelector('g.dm-tiles');
+    if (!group) return;
+    var layer = chooseMapLayer(currentViewBox(svg), svg.__dmPoints || [], svg.__dmPx);
+    if (!layer) return;
+    var zoomKey = String(group.getAttribute('data-zoom'));
+    if (zoomKey !== String(layer.zoom)) {
+      group.innerHTML = offlineTileSvg(layer);
+      group.setAttribute('data-zoom', layer.zoom);
+      var label = svg.querySelector('.dm-layer-label');
+      if (label) label.textContent = '上海离线底图 · Z' + layer.zoom + ' 详细路网';
+    }
   }
 
   function renderDemoMap(el, data) {
@@ -492,25 +690,39 @@
     data.routes.forEach(function (r) {
       r.stops.forEach(function (s) { all.push({ lng: s.lng, lat: s.lat }); });
     });
-    var m = OFFLINE_SHANGHAI_MAP;
     var canUseOffline = all.length > 0 && all.every(function (p) {
-      return p.lng >= m.west && p.lng <= m.east &&
-        p.lat >= m.south && p.lat <= m.north;
+      return p.lng >= OFFLINE_BASE_LAYER.west && p.lng <= OFFLINE_BASE_LAYER.east &&
+        p.lat >= OFFLINE_BASE_LAYER.south && p.lat <= OFFLINE_BASE_LAYER.north;
     });
     var W;
     var H;
     var grid = '';
     var px;
+    var activeLayer = null;
 
     if (canUseOffline) {
-      W = m.cols * m.tileSize;
-      H = m.rows * m.tileSize;
-      var origin = webMercatorPx(m.west, m.north, m.zoom);
+      var baseExt = layerExtent(OFFLINE_BASE_LAYER);
+      W = Math.round(baseExt.w);
+      H = Math.round(baseExt.h);
+      var origin = baseExt.origin;
       px = function (p) {
-        var w = webMercatorPx(p.lng, p.lat, m.zoom);
+        var w = webMercatorPx(p.lng, p.lat, OFFLINE_MASTER_ZOOM);
         return [Math.round(w.x - origin.x), Math.round(w.y - origin.y)];
       };
-      grid = offlineTileSvg();
+      var xs = all.map(function (p) { return px(p)[0]; });
+      var ys = all.map(function (p) { return px(p)[1]; });
+      var pad = 90;
+      var minX = Math.max(0, Math.min.apply(null, xs) - pad);
+      var maxX = Math.min(W, Math.max.apply(null, xs) + pad);
+      var minY = Math.max(0, Math.min.apply(null, ys) - pad);
+      var maxY = Math.min(H, Math.max.apply(null, ys) + pad);
+      var vw = Math.min(W, Math.max(520, maxX - minX));
+      var vh = Math.min(H, Math.max(420, maxY - minY));
+      var vx = Math.max(0, Math.min(minX, W - vw));
+      var vy = Math.max(0, Math.min(minY, H - vh));
+      var viewBox = [vx, vy, vw, vh].join(' ');
+      activeLayer = chooseMapLayer({ x: vx, y: vy, w: vw, h: vh }, all, px);
+      grid = offlineTileSvg(activeLayer);
     } else {
       W = 900;
       H = 520;
@@ -533,23 +745,6 @@
       for (var gy = 0; gy <= H; gy += 60) {
         grid += '<line x1="0" y1="' + gy + '" x2="' + W + '" y2="' + gy + '" class="dm-grid-h"/>';
       }
-    }
-
-    var viewBox;
-    if (canUseOffline) {
-      var xs = all.map(function (p) { return px(p)[0]; });
-      var ys = all.map(function (p) { return px(p)[1]; });
-      var pad = 90;
-      var minX = Math.max(0, Math.min.apply(null, xs) - pad);
-      var maxX = Math.min(W, Math.max.apply(null, xs) + pad);
-      var minY = Math.max(0, Math.min.apply(null, ys) - pad);
-      var maxY = Math.min(H, Math.max.apply(null, ys) + pad);
-      var vw = Math.min(W, Math.max(520, maxX - minX));
-      var vh = Math.min(H, Math.max(420, maxY - minY));
-      var vx = Math.max(0, Math.min(minX, W - vw));
-      var vy = Math.max(0, Math.min(minY, H - vh));
-      viewBox = [vx, vy, vw, vh].join(' ');
-    } else {
       viewBox = '0 0 ' + W + ' ' + H;
     }
 
@@ -576,16 +771,12 @@
     });
 
     var startP = px(data.start);
-    var endP = px(data.end);
-    var sameTerm = Math.abs(data.start.lng - data.end.lng) < 1e-9 &&
-      Math.abs(data.start.lat - data.end.lat) < 1e-9;
-    if (sameTerm) endP = [startP[0], startP[1] + 30];
     var legend = data.routes.map(function (r) {
       return '<span class="dm-legend-item"><i style="background:' + safeColor(r.color) + '"></i>' + escHtml(r.label) + '</span>';
     }).join('');
     var mapLabel = canUseOffline
-      ? '<span class="dm-legend-item dm-legend-demo"><i class="dm-demo-dot"></i>上海离线底图</span>' +
-        '<span class="dm-legend-item dm-legend-attribution">© OpenStreetMap</span>'
+      ? '<span class="dm-legend-item dm-legend-demo"><i class="dm-demo-dot"></i><span class="dm-layer-label">上海离线底图 · Z' + activeLayer.zoom + ' 详细路网</span></span>' +
+        '<span class="dm-legend-item dm-legend-attribution">© 高德地图</span>'
       : '<span class="dm-legend-item dm-legend-demo"><i class="dm-demo-dot"></i>离线估算</span>';
     var mapAria = canUseOffline ? '上海离线路线图' : '派车路线示意图';
 
@@ -593,18 +784,21 @@
       '<div class="demo-map-wrap">' +
         '<svg viewBox="' + viewBox + '" role="img" aria-label="' + mapAria + '" class="demo-map" preserveAspectRatio="xMidYMid meet" ' +
           'data-map-w="' + W + '" data-map-h="' + H + '" data-initial-viewbox="' + viewBox + '">' +
-          grid + routesSvg + stopsSvg +
+          '<g class="dm-tiles" data-zoom="' + (activeLayer ? activeLayer.zoom : '') + '">' + grid + '</g>' +
+          routesSvg + stopsSvg +
           '<g transform="translate(' + startP[0] + ',' + startP[1] + ')" class="dm-term">' +
             '<circle r="14" fill="#16A34A"/><text y="5" text-anchor="middle" class="dm-term-text">起</text>' +
-          '</g>' +
-          '<g transform="translate(' + endP[0] + ',' + endP[1] + ')" class="dm-term">' +
-            '<circle r="14" fill="#475569"/><text y="5" text-anchor="middle" class="dm-term-text">终</text>' +
           '</g>' +
         '</svg>' +
         '<div class="dm-legend">' + legend +
           mapLabel +
         '</div>' +
       '</div>';
+    var svg = el.querySelector('svg.demo-map');
+    if (svg) {
+      svg.__dmPoints = all;
+      svg.__dmPx = px;
+    }
   }
 
   function renderAmapMap(el, data) {
@@ -615,7 +809,8 @@
       resizeEnable: true
     });
     var overlays = [];
-    var sameTerm = Math.abs(data.start.lng - data.end.lng) < 1e-9 &&
+    var sameTerm = data.end &&
+      Math.abs(data.start.lng - data.end.lng) < 1e-9 &&
       Math.abs(data.start.lat - data.end.lat) < 1e-9;
 
     data.routes.forEach(function (r) {
@@ -645,11 +840,13 @@
       content: '<div class="dispatch-marker dispatch-marker-term" title="出发点">起</div>',
       offset: new AMap.Pixel(-14, -14)
     }));
-    overlays.push(new AMap.Marker({
-      position: [data.end.lng, data.end.lat],
-      content: '<div class="dispatch-marker dispatch-marker-term dispatch-marker-end" title="返回点">终</div>',
-      offset: sameTerm ? new AMap.Pixel(-15, 30) : new AMap.Pixel(-14, -14)
-    }));
+    if (data.end) {
+      overlays.push(new AMap.Marker({
+        position: [data.end.lng, data.end.lat],
+        content: '<div class="dispatch-marker dispatch-marker-term dispatch-marker-end" title="返回点">终</div>',
+        offset: sameTerm ? new AMap.Pixel(-15, 30) : new AMap.Pixel(-14, -14)
+      }));
+    }
 
     map.add(overlays);
     map.setFitView(null, false, [54, 54, 54, 54]);
@@ -677,6 +874,7 @@
     openMapSearch: openMapSearch,
     renderDemoMap: renderDemoMap,
     renderAmapMap: renderAmapMap,
+    refreshOfflineLayer: refreshOfflineLayer,
     isAmap: function () { return service.mode === 'amap'; },
     status: function () {
       return {
