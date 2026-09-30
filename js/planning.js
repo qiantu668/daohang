@@ -605,7 +605,7 @@
     var k = vehicles.length;
     if (!n) throw new Error('没有可排任务');
     if (!k) throw new Error('没有可用车辆');
-    var thresholdM = Number(opts.nearbyDistanceM) > 0 ? Number(opts.nearbyDistanceM) : 15000;
+    var thresholdM = Number(opts.nearbyDistanceM) > 0 ? Number(opts.nearbyDistanceM) : 5000;
     var clusters = clusterTasksByProximity(tasks, k, thresholdM);
     var start = opts.matrix.coords[0];
     var end = opts.matrix.hasEnd ? opts.matrix.coords[opts.matrix.size - 1] : null;
